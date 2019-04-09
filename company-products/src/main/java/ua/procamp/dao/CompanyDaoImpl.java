@@ -19,7 +19,7 @@ public class CompanyDaoImpl implements CompanyDao {
     public Company findByIdFetchProducts(Long id) {
         return readWithinTx(entityManager ->
                 entityManager
-                        .createQuery("select c from Company c join fetch c.products where c.id = :id", Company.class)
+                        .createQuery("select c from Company c left join fetch c.products where c.id = :id", Company.class)
                         .setParameter("id", id)
                         .getSingleResult()
         );
