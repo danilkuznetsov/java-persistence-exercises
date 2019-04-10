@@ -22,46 +22,55 @@ public class PhotoDaoImpl implements PhotoDao {
 
     @Override
     public void save(Photo photo) {
-        execute(em -> em.persist(photo));
+        executeInTx(em -> em.persist(photo));
     }
 
     @Override
     public Photo findById(long id) {
-        return executeAndGetSingleResult(em -> em.find(Photo.class, id));
+        return executeInTxAndGetResults(em -> em.find(Photo.class, id));
     }
 
     @Override
     public List<Photo> findAll() {
-        return executeAndGetResults(
-                em -> em.createQuery("select p from Photo p", Photo.class)
+        return executeInTxAndGetResults(
+                em -> em
+                        .createQuery("select p from Photo p", Photo.class)
                         .getResultList()
         );
     }
 
     @Override
     public void remove(Photo photo) {
-        execute(em -> {
+        executeInTx(em -> {
             Photo mergedPhoto = em.merge(photo);
             em.remove(mergedPhoto);
         });
     }
 
-
     @Override
     public void addComment(long photoId, String comment) {
-        execute(em -> {
-            Photo photo = em.find(Photo.class, photoId);
-            photo.addComment(new PhotoComment(comment));
+        executeInTx(em -> {
+            PhotoComment newComment = new PhotoComment(comment);
+            newComment.setPhoto(em.getReference(Photo.class, photoId));
+            em.persist(newComment);
         });
     }
 
-    private void execute(Consumer<EntityManager> managerConsumer) {
+    private void executeInTx(Consumer<EntityManager> consumer) {
+        executeInTxAndGetResults(em -> {
+            consumer.accept(em);
+            return true;
+        });
+    }
+
+    private <T> T executeInTxAndGetResults(Function<EntityManager, T> fun) {
         EntityManager em = entityManagerFactory.createEntityManager();
         em.getTransaction().begin();
         em.setFlushMode(FlushModeType.COMMIT);
         try {
-            managerConsumer.accept(em);
+            T result = fun.apply(em);
             em.getTransaction().commit();
+            return result;
         } catch (Exception e) {
             em.getTransaction().rollback();
             throw new RuntimeException();
@@ -69,37 +78,4 @@ public class PhotoDaoImpl implements PhotoDao {
             em.close();
         }
     }
-
-    private Photo executeAndGetSingleResult(Function<EntityManager, Photo> fun) {
-        EntityManager em = entityManagerFactory.createEntityManager();
-        em.getTransaction().begin();
-        em.setFlushMode(FlushModeType.COMMIT);
-        try {
-            Photo photo = fun.apply(em);
-            em.getTransaction().commit();
-            return photo;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
-            throw new RuntimeException();
-        } finally {
-            em.close();
-        }
-    }
-
-    private List<Photo> executeAndGetResults(Function<EntityManager, List<Photo>> fun) {
-        EntityManager em = entityManagerFactory.createEntityManager();
-        em.getTransaction().begin();
-        em.setFlushMode(FlushModeType.COMMIT);
-        try {
-            List<Photo> photos = fun.apply(em);
-            em.getTransaction().commit();
-            return photos;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
-            throw new RuntimeException();
-        } finally {
-            em.close();
-        }
-    }
-
 }
