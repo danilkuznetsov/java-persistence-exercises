@@ -1,11 +1,25 @@
 package ua.procamp.model;
 
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @NoArgsConstructor
 @Getter
@@ -40,4 +54,17 @@ public class Account {
 
     @Column(name = "balance")
     private BigDecimal balance = BigDecimal.ZERO.setScale(2);
+
+    @OneToMany(mappedBy = "holder")
+    private List<Card> cards = new ArrayList<>();
+
+    public void addCard(Card card){
+        this.cards.add(card);
+        card.setHolder(this);
+    }
+
+    public void removeCard(Card card){
+        this.cards.remove(card);
+        card.setHolder(null);
+    }
 }
