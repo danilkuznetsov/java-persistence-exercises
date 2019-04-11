@@ -1,7 +1,17 @@
 package ua.procamp.model;
 
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import javax.persistence.CascadeType;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,16 +35,27 @@ import java.util.List;
 @NoArgsConstructor
 @Getter
 @Setter
+@Entity
+@EqualsAndHashCode(of = "id")
 public class Company {
+    @Id
+    @GeneratedValue
     private Long id;
+
+    @Column(nullable = false)
     private String name;
+
+    @OneToMany(mappedBy = "company", orphanRemoval = true, cascade = CascadeType.ALL)
+    @Setter(AccessLevel.PRIVATE)
     private List<Product> products = new ArrayList<>();
 
     public void addProduct(Product product) {
-        throw new UnsupportedOperationException("I'm still not implemented!");
+        this.products.add(product);
+        product.setCompany(this);
     }
 
     public void removeProduct(Product product) {
-        throw new UnsupportedOperationException("I'm still not implemented!");
+        this.products.remove(product);
+        product.setCompany(null);
     }
 }
