@@ -6,6 +6,9 @@ import ua.procamp.model.Account;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class AccountDaoImpl implements AccountDao {
     private EntityManagerFactory emf;
@@ -17,114 +20,74 @@ public class AccountDaoImpl implements AccountDao {
     @Override
     public void save(Account account) {
 
-        if (account.getEmail() == null){
-            throw new AccountDaoException("Account doesn't have email field",null);
+        if (Objects.isNull(account.getEmail())) {
+            throw new AccountDaoException("Account doesn't have email field");
         }
 
-        EntityManager entityManager = emf.createEntityManager();
-        entityManager.getTransaction().begin();
-
-        try {
-            entityManager.persist(account);
-            entityManager.getTransaction().commit();
-        } catch (Exception e) {
-            entityManager.getTransaction().rollback();
-        } finally {
-            entityManager.close();
-        }
+        executeInTx(em -> em.persist(account));
     }
 
     @Override
     public Account findById(Long id) {
-        EntityManager entityManager = emf.createEntityManager();
-        entityManager.getTransaction().begin();
-
-        try {
-            Account account = entityManager.find(Account.class, id);
-            entityManager.getTransaction().commit();
-            return account;
-        } catch (Exception e) {
-            entityManager.getTransaction().rollback();
-            throw new AccountDaoException("Cannot find account by id", e);
-        } finally {
-            entityManager.close();
-        }
+        return executeAndReturnInTx(em -> em.find(Account.class, id));
     }
 
     @Override
     public Account findByEmail(String email) {
-        EntityManager entityManager = emf.createEntityManager();
-        entityManager.getTransaction().begin();
-
-        try {
-            Account account = entityManager
-                    .createQuery("select a from Account a where a.email=:email", Account.class)
-                    .setParameter("email",email)
-                    .getSingleResult();
-
-            entityManager.getTransaction().commit();
-
-            return account;
-
-        } catch (Exception e) {
-            entityManager.getTransaction().rollback();
-            throw new AccountDaoException("Cannot find account by id", e);
-        } finally {
-            entityManager.close();
-        }
+        return executeAndReturnInTx(
+                em -> em.createQuery("select a from Account a where a.email=:email", Account.class)
+                        .setParameter("email", email)
+                        .getSingleResult()
+        );
     }
 
     @Override
     public List<Account> findAll() {
-        EntityManager entityManager = emf.createEntityManager();
-        entityManager.getTransaction().begin();
-
-        try {
-
-            List<Account> accounts = entityManager
-                    .createQuery("select a from Account a ", Account.class)
-                    .getResultList();
-
-            entityManager.getTransaction().commit();
-
-            return accounts;
-        } catch (Exception e) {
-            entityManager.getTransaction().rollback();
-            throw new AccountDaoException("Cannot find account by id", e);
-        } finally {
-            entityManager.close();
-        }
+        return executeAndReturnInTx(
+                em -> em.createQuery("select a from Account a ", Account.class)
+                        .getResultList()
+        );
     }
 
     @Override
     public void update(Account account) {
+        executeInTx(em -> {
+            em.merge(account);
+        });
+    }
+
+    @Override
+    public void remove(Account account) {
+        executeInTx(em -> {
+            Account managedAccount = em.merge(account);
+            em.remove(managedAccount);
+        });
+    }
+
+    private void executeInTx(Consumer<EntityManager> consumer) {
         EntityManager entityManager = emf.createEntityManager();
         entityManager.getTransaction().begin();
-
         try {
-            entityManager.merge(account);
+            consumer.accept(entityManager);
             entityManager.getTransaction().commit();
         } catch (Exception e) {
             entityManager.getTransaction().rollback();
-            throw new AccountDaoException("Cannot find account by id", e);
+            throw new AccountDaoException("Cannot execute query", e);
         } finally {
             entityManager.close();
         }
     }
 
-    @Override
-    public void remove(Account account) {
+    private <T> T executeAndReturnInTx(Function<EntityManager, T> fun) {
         EntityManager entityManager = emf.createEntityManager();
         entityManager.getTransaction().begin();
         try {
-
-            account = entityManager.merge(account);
-            entityManager.remove(account);
-
+            T result = fun.apply(entityManager);
             entityManager.getTransaction().commit();
+            return result;
         } catch (Exception e) {
             entityManager.getTransaction().rollback();
-            throw new AccountDaoException("Cannot find account by id", e);
+            throw new AccountDaoException("Cannot execute query", e);
         } finally {
             entityManager.close();
         }

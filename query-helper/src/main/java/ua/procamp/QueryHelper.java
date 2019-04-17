@@ -32,7 +32,7 @@ public class QueryHelper {
     public <T> T readWithinTx(Function<EntityManager, T> entityManagerConsumer) {
         EntityManager entityManager = entityManagerFactory.createEntityManager();
 
-        // alternative way set read-only mode set query hit
+        // alternative way set read-only mode is set query hint
         entityManager.unwrap(Session.class).setDefaultReadOnly(true);
         entityManager.getTransaction().begin();
         try {

@@ -32,7 +32,6 @@ CREATE TABLE IF NOT EXISTS users (
  CONSTRAINT users_email_AK UNIQUE (email)
 );
 
-
 CREATE TABLE IF NOT EXISTS profiles (
  user_id BIGINT,
  city VARCHAR (255),

@@ -1,5 +1,6 @@
 package ua.procamp.model;
 
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -56,6 +57,7 @@ public class Account {
     private BigDecimal balance = BigDecimal.ZERO.setScale(2);
 
     @OneToMany(mappedBy = "holder")
+    @Setter(AccessLevel.PRIVATE)
     private List<Card> cards = new ArrayList<>();
 
     public void addCard(Card card){

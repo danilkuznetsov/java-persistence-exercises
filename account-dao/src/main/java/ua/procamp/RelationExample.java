@@ -38,16 +38,11 @@ public class RelationExample {
 
         });
 
-
         emUtil.performWithinTx((em)->{
-
             Account foundAccount = em.find(Account.class, account.getId());
-
             System.out.println("I am here");
             foundAccount.getCards().forEach(System.out::println);
-
         });
-
 
         // lazy loading exception
 //        Account account1 = emUtil.performReturningWithinTx((em) -> {
@@ -70,7 +65,6 @@ public class RelationExample {
         });
 
         account1.getCards().forEach(System.out::println);
-
         entityManagerFactory.close();
     }
 }

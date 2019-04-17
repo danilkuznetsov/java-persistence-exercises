@@ -35,7 +35,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-@EqualsAndHashCode(of = {"id","url"})
+@EqualsAndHashCode(of = {"url"})
 @Entity
 @Table(name = "photo")
 public class Photo {
@@ -46,6 +46,7 @@ public class Photo {
 
     @Column(nullable = false, unique = true)
     private String url;
+
     private String description;
 
     @OneToMany(mappedBy = "photo", orphanRemoval = true, cascade = CascadeType.ALL)
@@ -61,5 +62,4 @@ public class Photo {
         this.comments.remove(comment);
         comment.setPhoto(null);
     }
-
 }

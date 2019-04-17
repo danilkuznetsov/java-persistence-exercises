@@ -5,6 +5,7 @@ import ua.procamp.model.Company;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
+import java.util.function.Function;
 
 public class CompanyDaoImpl implements CompanyDao {
     private EntityManagerFactory entityManagerFactory;
@@ -15,25 +16,28 @@ public class CompanyDaoImpl implements CompanyDao {
 
     @Override
     public Company findByIdFetchProducts(Long id) {
-        EntityManager entityManager = entityManagerFactory.createEntityManager();
+        return executeAndReturn(em ->
+                em.createQuery("select distinct c from Company c " +
+                        "left join fetch c.products " +
+                        "where c.id = :id", Company.class
+                )
+                        .setParameter("id", id)
+                        .getSingleResult()
+        );
+    }
 
+    private <T> T executeAndReturn(Function<EntityManager, T> fun) {
+        EntityManager entityManager = entityManagerFactory.createEntityManager();
         entityManager.getTransaction().begin();
         try {
-
-            Company company = entityManager
-                    .createQuery("select distinct c from Company c left join fetch c.products where c.id = :id", Company.class)
-                    .setParameter("id",id)
-                    .getSingleResult();
-
+            T result = fun.apply(entityManager);
             entityManager.getTransaction().commit();
-            return company;
-        }catch (Exception e){
-
+            return result;
+        } catch (Exception e) {
             entityManager.getTransaction().rollback();
-            throw new CompanyDaoException("Cannot find company",e);
-        }finally {
+            throw new CompanyDaoException("Cannot execute query", e);
+        } finally {
             entityManager.close();
         }
-
     }
 }
